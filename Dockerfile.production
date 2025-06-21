@@ -1,0 +1,56 @@
+# Stage de build
+FROM node:18-alpine as builder
+
+WORKDIR /app
+
+# Installation des dépendances avec cache optimisé
+COPY package*.json ./
+RUN npm ci --only=production --silent
+
+# Copie et build du code source
+COPY . .
+ENV NODE_ENV=production
+RUN npm run build
+
+# Stage de production avec Nginx
+FROM nginx:alpine
+
+# Installation des outils de surveillance
+RUN apk add --no-cache curl
+
+# Copie des fichiers construits
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Configuration Nginx optimisée
+COPY nginx.production.conf /etc/nginx/nginx.conf
+
+# Script de démarrage
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
+# Variables d'environnement
+ENV APP_NAME="Caisse Médicale"
+ENV APP_VERSION="1.0.0"
+ENV TZ=Europe/Paris
+
+# Création d'un utilisateur non-root
+RUN adduser -D -H -u 1000 -s /sbin/nologin www-data
+
+# Permissions correctes
+RUN chown -R www-data:www-data /usr/share/nginx/html && \
+    chmod -R 755 /usr/share/nginx/html
+
+# Configuration des logs
+RUN mkdir -p /var/log/nginx && \
+    chown -R www-data:www-data /var/log/nginx
+
+# Port exposé
+EXPOSE 80
+
+# Surveillance de la santé du conteneur
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost/health || exit 1
+
+# Point d'entrée
+ENTRYPOINT ["/docker-entrypoint.sh"]
+CMD ["nginx", "-g", "daemon off;"]
