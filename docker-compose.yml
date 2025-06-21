@@ -1,0 +1,62 @@
+
+version: '3.8'
+
+services:
+  # Base de données MySQL
+  mysql:
+    image: mysql:8.0
+    container_name: medical_cashier_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: medical_cashier_2025
+      MYSQL_DATABASE: medical_cashier
+      MYSQL_USER: medical_user
+      MYSQL_PASSWORD: medical_pass_2025
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docs/production-database.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - medical_network
+
+  # Application React
+  frontend:
+    build: .
+    container_name: medical_cashier_app
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - mysql
+    environment:
+      - VITE_DATABASE_URL=mysql://medical_user:medical_pass_2025@mysql:3306/medical_cashier
+      - VITE_APP_NAME=Système de Gestion de Caisse Médical
+      - VITE_NODE_ENV=production
+    networks:
+      - medical_network
+
+  # Interface d'administration de base de données (optionnel)
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: medical_cashier_admin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: medical_user
+      PMA_PASSWORD: medical_pass_2025
+    ports:
+      - "8080:80"
+    depends_on:
+      - mysql
+    networks:
+      - medical_network
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  medical_network:
+    driver: bridge
