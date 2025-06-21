@@ -1,0 +1,30 @@
+
+{
+  "name": "caisse-medicale-local",
+  "version": "1.0.0",
+  "description": "Système de caisse médicale - Déploiement local",
+  "scripts": {
+    "start": "serve -s dist -p 3000",
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "build-local": "npm run build && npm run package-local",
+    "package-local": "node scripts/package-local.js",
+    "serve": "serve -s dist -p 3000",
+    "backup": "node scripts/backup-local.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.8",
+    "serve": "^14.2.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.2.2",
+    "vite": "^5.3.4"
+  },
+  "localConfig": {
+    "appName": "Caisse Médicale",
+    "defaultPort": 3000,
+    "autoBackup": true,
+    "offlineMode": true,
+    "supabaseRequired": true
+  }
+}
